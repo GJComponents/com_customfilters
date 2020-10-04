@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Update stream generated automatically by Akeeba Release System on 2020-09-03 12:51:55 GMT -->
+<updates>
+    <update>
+        <name><![CDATA[Custom Filters PRO]]></name>
+        <description><![CDATA[Custom Filters PRO]]></description>
+        <element>com_customfilters</element>
+        <type>component</type>
+        <version>2.6.4</version>
+        <infourl title="Custom Filters - Pro 2.8.7">https://breakdesigns.net/component/ars/?view=Items&amp;release_id=167</infourl>
+        <downloads>
+            <downloadurl type="full" format="zip">https://github.com/GJComponents/com_customfilters/archive/main.zip</downloadurl>
+        </downloads>
+        <tags>
+            <tag>stable</tag>
+        </tags>
+        <maintainer><![CDATA[Break Designs]]></maintainer>
+        <maintainerurl>https://breakdesigns.net/</maintainerurl>
+        <section>Updates</section>
+        <targetplatform name="joomla" version="3.(8|9|10)"/>
+        <client>1</client>
+        <folder/>
+    </update>
+</updates>

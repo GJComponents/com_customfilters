@@ -25,12 +25,14 @@ class CustomfiltersViewProducts extends cfView
     /**
      *
      * @var string
+     * @since 3.9
      */
     public $vm_version;
 
     /**
      *
      * @var int
+     * @since 3.9
      */
     public $show_prices;
 
@@ -38,9 +40,13 @@ class CustomfiltersViewProducts extends cfView
      * Display function of the view
      *
      * @see cfView::display()
+     * @since 3.9
      */
     public function display($tpl = null)
     {
+
+
+
         $app = JFactory::getApplication();
         $this->show_prices = (int)VmConfig::get('show_prices', 1);
         $this->addHelperPath(JPATH_VM_ADMINISTRATOR . DIRECTORY_SEPARATOR . 'helpers');
@@ -96,7 +102,7 @@ class CustomfiltersViewProducts extends cfView
             $mainframe = JFactory::getApplication();
             $mainframe->set('setTemplate', $template);
         }
-        $this->_prepareDocument();
+
 
         /*
          * show base price variables
@@ -155,10 +161,26 @@ class CustomfiltersViewProducts extends cfView
         $this->searchCustomValues = '';
         $this->add_product_link= '';
 
+
+
+
+
+
+
         // my model's pagination
         $this->vmPagination = $model->getPagination(true);
+
+//        echo'<pre>';print_r( $this->vmPagination );echo'</pre>'.__FILE__.' '.__LINE__;
+//        die(__FILE__ .' '. __LINE__ );
+
+
         $this->perRow = $this->menuParams->get('prod_per_row', 3);
         $this->orderByList = $this->get('OrderByList');
+
+//        echo'<pre>';print_r( count( $this->products ) );echo'</pre>'.__FILE__.' '.__LINE__;
+//        die(__FILE__ .' '. __LINE__ );
+
+
 
         parent::display($tpl);
         if (empty($this->products)) {
@@ -167,7 +189,8 @@ class CustomfiltersViewProducts extends cfView
     }
 
     /**
-     * Prepares the document
+     * Установка Meta и заголовков
+     * @since 3.9
      */
     protected function _prepareDocument()
     {
@@ -175,6 +198,8 @@ class CustomfiltersViewProducts extends cfView
         $app = JFactory::getApplication();
         $joomla_conf = JFactory::getConfig();
         $this->setCanonical();
+
+
 
         /*
          * Add meta data
@@ -192,7 +217,18 @@ class CustomfiltersViewProducts extends cfView
             if ($joomla_conf->get('MetaAuthor') == true && ! empty($this->category->metaauthor)) {
                 $document->setMetaData('author', $this->category->metaauthor);
             }
+
+
+
+//            $document->setTitle('XXXXXXXX') ;
+//            echo'<pre>';print_r( $app->input );echo'</pre>'.__FILE__.' '.__LINE__;
+//            die(__FILE__ .' '. __LINE__ );
+
         }
+
+
+
+
 
         /*
          * Load scripts and styles

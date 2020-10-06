@@ -1,6 +1,13 @@
 <?php
 require_once JPATH_ROOT . DIRECTORY_SEPARATOR . 'components' . DIRECTORY_SEPARATOR . 'com_customfilters' . DIRECTORY_SEPARATOR . 'include' . DIRECTORY_SEPARATOR . 'tools.php';
 
+/**
+ * Class UrlHandler - Обработка ссылок
+ * @since 3.9
+ * @auhtor Gartes | sad.net79@gmail.com | Skype : agroparknew | Telegram : @gartes
+ * @date 04.10.2020 19:01
+ *
+ */
 class UrlHandler
 {
     /**
@@ -53,8 +60,9 @@ class UrlHandler
 
     /**
      *
-     * @param unknown $module
-     * @param array $selected_filters
+     * @param Object $module параметры модуля
+     * @param array $selected_filters выбранные фмльтры и категории
+     * @since 3.9 
      */
     public function __construct($module, $selected_filters = [])
     {
@@ -67,73 +75,92 @@ class UrlHandler
     }
 
     /**
+     * Создает href / URI для каждого параметра фильтра
      * Creates the href/URI for each filter's option
      *
      * @param array $filter
-     * @param string $var_value
-     * @param string $type
-     *            the type of url (option|clear)
+     * @param string $var_value id кастомарного поля - значение параметра фильтра
+     * @param string $type  тип URL (option|clear)
+     *                      the type of url (option|clear)
      *
      * @author Sakis Terz
      * @return String URI
      * @since 1.0
      */
-    public function getURL($filter, $var_value = NULL, $type = 'option')
+    public function getURL($filter, $var_value = NULL, $type = 'option' , $filterOptionsSelectedCount = false )
     {
+        # Имя фильтра ( price , custom_f_23 , )
         $var_name = $filter['var_name'];
         $display_type = $filter['display'];
         $on_category_reset_others = false;
+        # Выбранные селекторы фальтра + категории
         $selected_filters = $this->selected_flt_modif;
-        $results_trigger=$this->moduleParams->get('results_trigger','sel');
+        # Выбор события, после которого будут загружены результаты (нажатие кнопки или любой выбор )
+        $results_trigger = $this->moduleParams->get('results_trigger', 'sel');
 
-        if ($var_name == 'virtuemart_category_id') {
+
+        if ($var_name == 'virtuemart_category_id')
+        {
             $on_category_reset_others = $this->moduleParams->get('category_flt_onchange_reset', 'filters');
-            if ($on_category_reset_others) {
-                if (! empty($selected_filters['virtuemart_category_id']))
+            if ($on_category_reset_others)
+            {
+                if (!empty($selected_filters['virtuemart_category_id']))
                     $categ_array = $selected_filters['virtuemart_category_id'];
                 else
                     $categ_array = array();
             }
-        } else {
+        } else
+        {
             //set category to the rest of the filters when no category is selected, in case of only sub-categories display
-            if ($this->moduleParams->get('category_flt_only_subcats', false) && $this->getHiddenCategory()) {
+            if ($this->moduleParams->get('category_flt_only_subcats', false) && $this->getHiddenCategory())
+            {
                 $selected_filters['virtuemart_category_id'] = $this->getHiddenCategory();
             }
         }
 
         // in case of dependency top-bottom get the selected that this filter should use
-        if ($this->moduleParams->get('dependency_direction', 't-b') == 't-b') {
-            if (isset($this->selected_fl_per_flt[$var_name])) {
+        if ($this->moduleParams->get('dependency_direction', 't-b') == 't-b')
+        {
+            if (isset($this->selected_fl_per_flt[$var_name]))
+            {
                 $q_array = $this->selected_fl_per_flt[$var_name];
-            }
-            else {
+            } else
+            {
                 $q_array = array();
+            }
+        } // on category selection clear others
+        else
+        {
+            if ($on_category_reset_others)
+            {
+                $q_array['virtuemart_category_id'] = $categ_array;
+                if ($on_category_reset_others == 'filters')
+                {
+                    !empty($this->selected_flt['q']) ? $q_array['q'] = $this->selected_flt['q'] : '';
+                }
+            } else
+            {
+                $q_array = $selected_filters;
             }
         }
 
-        // on category selection clear others
-        else
-            if ($on_category_reset_others) {
-                $q_array['virtuemart_category_id'] = $categ_array;
-                if ($on_category_reset_others == 'filters') {
-                    ! empty($this->selected_flt['q']) ? $q_array['q'] = $this->selected_flt['q'] : '';
-                }
-            } else {
-                $q_array = $selected_filters;
-            }
-
         // in case of category tree, the parent options are always links, no matter what is the display type of the filter
-        if (! empty($filter['options'][$var_value]['isparent'])) {
+        if (!empty($filter['options'][$var_value]['isparent']))
+        {
             $display_type = 4;
         }
 
         // do not include also the parents in the urls of the child
-        if (! empty($filter['options'][$var_value]['cat_tree'])) {
+        if (!empty($filter['options'][$var_value]['cat_tree']))
+        {
             $parent_cat = explode('-', $filter['options'][$var_value]['cat_tree']);
-            foreach ($parent_cat as $pcat) {
-                if (isset($q_array[$var_name])) {
+            foreach ($parent_cat as $pcat)
+            {
+                if (isset($q_array[$var_name]))
+                {
                     $index = array_search($pcat, $q_array[$var_name]);
-                    if ($index !== false) {
+                    if ($index !== false)
+                    {
                         unset($q_array[$var_name][$index]);
                     }
                 }
@@ -144,8 +171,9 @@ class UrlHandler
          * in case of select , radio or links (single select) or is clear remove previous selected criteria from the same filter
          * only 1 option from that filter should be selected
          */
-        if (($display_type != 3 && $display_type != 10 && $display_type != 12) || $type == 'clear') {
-            $q_array=$this->getClearQuery($q_array, $filter, $type);
+        if (($display_type != 3 && $display_type != 10 && $display_type != 12) || $type == 'clear')
+        {
+            $q_array = $this->getClearQuery($q_array, $filter, $type);
         }
 
         /*
@@ -153,24 +181,29 @@ class UrlHandler
          * The destination link of that option should omit it's value in case of checkboxes or multi-button
          * to create the uncheck effect
          */
-        if (($display_type == 3 || $display_type == 10 || $display_type == 12) && (isset($q_array[$var_name]) && in_array($var_value, $q_array[$var_name]))) {
-            if (is_array($q_array[$var_name])) {
+        if (($display_type == 3 || $display_type == 10 || $display_type == 12) && (isset($q_array[$var_name]) && in_array($var_value, $q_array[$var_name])))
+        {
+            if (is_array($q_array[$var_name]))
+            {
                 $key = array_search($var_value, $q_array[$var_name]);
                 unset($q_array[$var_name][$key]);
                 $q_array[$var_name] = array_values($q_array[$var_name]); // reorder to fill null indexes
                 if (count($q_array[$var_name]) == 0)
                     unset($q_array[$var_name]); // if no any value unset it
             }
-        }
-
-        /* if not exist add it */
-        else {
-            if ($var_value) {
-                if (isset($q_array[$var_name]) && is_array($q_array[$var_name])) {
+        } /* if not exist add it */
+        else
+        {
+            if ($var_value)
+            {
+                if (isset($q_array[$var_name]) && is_array($q_array[$var_name]))
+                {
 
                     // remove the null option which used only for sef reasons
-                    if (isset($q_array[$var_name][0])) {
-                        if ($q_array[$var_name][0] == '0' || $q_array[$var_name][0] == ' ') {
+                    if (isset($q_array[$var_name][0]))
+                    {
+                        if ($q_array[$var_name][0] == '0' || $q_array[$var_name][0] == ' ')
+                        {
                             $q_array[$var_name][0] = $var_value;
                         }
                     }
@@ -187,30 +220,38 @@ class UrlHandler
          * If the custom filters won't be displayed in the page in case a vm_cat and/or a vm_manuf is not selected
          * remove the custom filters from the query too
          */
-        if ($var_name == 'virtuemart_category_id' || $var_name == 'virtuemart_manufacturer_id') {
+        if ($var_name == 'virtuemart_category_id' || $var_name == 'virtuemart_manufacturer_id')
+        {
             $cust_flt_disp_if = $this->moduleParams->get('custom_flt_disp_after');
 
-            if (($cust_flt_disp_if == 'vm_cat' && $var_name == 'virtuemart_category_id') || ($cust_flt_disp_if == 'vm_manuf' && $var_name == 'virtuemart_manufacturer_id')) {
+            if (($cust_flt_disp_if == 'vm_cat' && $var_name == 'virtuemart_category_id') || ($cust_flt_disp_if == 'vm_manuf' && $var_name == 'virtuemart_manufacturer_id'))
+            {
                 // if no category or manuf in the query
                 // remove all the custom filters from the query as the custom filters won't displayed
-                if (! isset($q_array[$var_name]) || count($q_array[$var_name]) == 0) {
+                if (!isset($q_array[$var_name]) || count($q_array[$var_name]) == 0)
+                {
                     $this->unsetCustomFilters($q_array);
                 }
             } else
-                if ($cust_flt_disp_if == 'vm_cat_or_vm_manuf' && ($var_name == 'virtuemart_category_id' || $var_name == 'virtuemart_manufacturer_id')) {
-                    if (! isset($q_array['virtuemart_category_id']) && ! isset($q_array['virtuemart_manufacturer_id'])) {
+                if ($cust_flt_disp_if == 'vm_cat_or_vm_manuf' && ($var_name == 'virtuemart_category_id' || $var_name == 'virtuemart_manufacturer_id'))
+                {
+                    if (!isset($q_array['virtuemart_category_id']) && !isset($q_array['virtuemart_manufacturer_id']))
+                    {
                         $this->unsetCustomFilters($q_array);
                     }
                 } else
-                    if ($cust_flt_disp_if == 'vm_cat_and_vm_manuf' && ($var_name == 'virtuemart_category_id' || $var_name == 'virtuemart_manufacturer_id')) {
-                        if (! isset($q_array['virtuemart_category_id']) || ! isset($q_array['virtuemart_manufacturer_id'])) {
+                    if ($cust_flt_disp_if == 'vm_cat_and_vm_manuf' && ($var_name == 'virtuemart_category_id' || $var_name == 'virtuemart_manufacturer_id'))
+                    {
+                        if (!isset($q_array['virtuemart_category_id']) || !isset($q_array['virtuemart_manufacturer_id']))
+                        {
                             $this->unsetCustomFilters($q_array);
                         }
                     }
         }
 
         $itemId = $this->menuParams->get('cf_itemid', '');
-        if ($itemId) {
+        if ($itemId)
+        {
             $q_array['Itemid'] = $itemId;
         }
         $q_array['option'] = 'com_customfilters';
@@ -218,12 +259,39 @@ class UrlHandler
 
         // if trigger is on select load results
         // else load the module
-        if ($results_trigger == 'btn') {
+        if ($results_trigger == 'btn')
+        {
             unset($q_array['Itemid']);
             $q_array['module_id'] = $this->module->id;
         }
 
-        $u = JFactory::getURI();
+        # Если количество выбранных опций фильтров == 1
+        # и это выбранная опция - Устанавливаем параметрв для ссылки на последнюю посещаемую категорию
+        if ( $filterOptionsSelectedCount == 1 && isset( $filter['options'][$var_value]  ) && $filter['options'][$var_value]['selected'] )
+        {
+            $lastCatId = ShopFunctionsf::getLastVisitedCategoryId ();
+            $q_array = [] ;
+            $q_array ['option'] = 'com_virtuemart' ;
+            $q_array ['view'] = 'category' ;
+            $q_array ['virtuemart_category_id'] = $lastCatId ;
+        }#END IF
+
+        if ( /*$filterOptionsSelectedCount == 1  &&*/ isset( $filter['options'][$var_value]  ) && $filter['options'][$var_value]['selected'])
+        {
+
+//            echo'<pre>';print_r( $filter['options'][$var_value] );echo'</pre>'.__FILE__.' '.__LINE__;
+//            echo'<pre>';print_r( $filter  );echo'</pre>'.__FILE__.' '.__LINE__;
+//            die(__FILE__ .' '. __LINE__ );
+
+            
+//            echo'<pre>';print_r( $filter );echo'</pre>'.__FILE__.' '.__LINE__;
+//            die(__FILE__ .' '. __LINE__ );
+
+
+        }#END IF
+
+
+        $u = clone \Joomla\CMS\Uri\Uri::getInstance();
         $query = $u->buildQuery($q_array);
         $uri = 'index.php?' . $query;
         return $uri;

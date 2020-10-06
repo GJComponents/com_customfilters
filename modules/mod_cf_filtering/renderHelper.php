@@ -83,6 +83,10 @@ class ModCfilteringRender
 	 */
 	public function __construct($module, $selected_flt, $filters)
 	{
+
+
+
+
 		$this->module=$module;
 		$this->filters=$filters;
 		$this->moduleparams=cftools::getModuleparams($module);
@@ -131,6 +135,16 @@ class ModCfilteringRender
 		$custom_flt_disp_empty=$this->moduleparams->get('custom_flt_disp_empty','0');
 		$filters_html_array=array();
 		$thereIsSelection=!empty($this->selected_flt);
+
+
+		# Подсчет выбранных опцый во всех фильтров
+        $filterOptionsSelectedCount = $this->optionsSelectedCount();
+
+
+        /*echo'<pre>';print_r(  );echo'</pre>'.__FILE__.' '.__LINE__;
+		echo'<pre>';print_r( $this->filters );echo'</pre>'.__FILE__.' '.__LINE__;
+		die(__FILE__ .' '. __LINE__ );*/
+
 
 		foreach($this->filters as $key=>$flt){
 		    $active_tree=array();
@@ -181,6 +195,9 @@ class ModCfilteringRender
 					$innerHTML_clear='';
 					$linkAttributes=array();
 
+
+
+
 					//--select drop down--//
 					if($disp_type==1){
 						foreach($options_ar as $op){
@@ -193,25 +210,29 @@ class ModCfilteringRender
 							if($opt->selected)$select_flt=' selected="selected"';
 
 							//not active and disabled
-							if(!$opt->active){
+                            if (!$opt->active)
+                            {
 
-							    //empty should be disabled
-								if($display_empty_opt==1){
-								    $option_id='1';//for inactive
-								    $inactive= 'disabled="disabled"';
-								}
-								//empty should be hidden
-								else continue;
-							}
-							else{
-								if($this->results_trigger=='btn')$option_id=$opt->id;
-								else {
-									$option_id=$opt->id;
-									$option_targ=JRoute::_($this->UrlHanlder->getURL($flt,$opt->id));
-									$url_set=true;
-								}
-								$opt_found=true;
-							}
+                                //empty should be disabled
+                                if ($display_empty_opt == 1)
+                                {
+                                    $option_id = '1';//for inactive
+                                    $inactive = 'disabled="disabled"';
+                                } //empty should be hidden
+                                else continue;
+                            } else
+                            {
+                                if ($this->results_trigger == 'btn')
+                                {
+                                    $option_id = $opt->id;
+                                } else
+                                {
+                                    $option_id = $opt->id;
+                                    $option_targ = JRoute::_($this->UrlHanlder->getURL($flt, $opt->id));
+                                    $url_set = true;
+                                }
+                                $opt_found = true;
+                            }
 
 							$label=$opt->label;
 							if($dispCounter && isset($opt->counter) && $opt->active){
@@ -231,242 +252,310 @@ class ModCfilteringRender
 						unset($opt);
 					}
 
+
+					
+					
 					//-- 2.radios, 3.checkboxes, 4.links, 7.image links, 9.color buttons single, 10.color buttons multi, 11.button single, 12. button multi
 					elseif($disp_type==2 || $disp_type==3 || $disp_type==4 || $disp_type==7 || $disp_type==9 || $disp_type==10 || $disp_type==11 || $disp_type==12){
 						$innerHTML='';
 
-						foreach($options_ar as $op){
-							$script='';
-							$opt=(object)$op;
-							$select_flt='';
-							$opt_class="cf_option";
-							$li_class='';
-							$class_name='';
-							$style='';
-							$color='';
-							$inactive='';
-							$element_id=$display_key.'_elid'.$opt->id;
-
-							//create classes for the category tree
-							if($key=='virtuemart_category_id' && $cat_ordering=='tree' && $opt->id>0 && isset($opt->cat_tree)){
-								$li_class='cf_catOption';
-								$li_class.=" cfLiLevel$opt->level";
-
-								if($category_flt_tree_mode==false){//tree mode collapsed
-									if(!empty($opt->isparent)){
-										$opt_class.=' cf_parentOpt';
-										$li_class.=' cf_parentLi';
-
-										if(strpos($current_tree_string,$opt->cat_tree.'-'.$opt->id.'-')!==false)$opt_state=' cf_expand';
-										else $opt_state=' cf_unexpand';
-										$opt_class.=$opt_state;
-									}
-									else {
-										$opt_class.=' cf_childOpt';
-
-									}
-									$opt_class.=' tree_'.$opt->cat_tree;
-									$li_class.=' li-tree_'.$opt->cat_tree;
-
-									if((empty($current_tree_string) && $opt->level>0) || (!empty($current_tree_string) && strpos($current_tree_string,$opt->cat_tree.'-')===false)){
-										$li_class.=" cf_invisible";
-									}
-								}
-							}
-
-							if($opt->selected){
-								$select_flt=' checked="checked"';
-								$class_name=' cf_sel_opt';
-							}
-							if($opt->type=='clear')$class_name.=' cf_clear';
-							else{
-								//colors
-								if($disp_type=='9' || $disp_type=='10'){
-									$colors_multi=explode('|', $opt->label);
-									$nr_colors_multi=count($colors_multi);
-									$color_btn_width=100/$nr_colors_multi;
-									//check to see if the value is color
-									if($nr_colors_multi==1){
-										$color=cftools::checkNFormatColor($opt->label);
-										//if no color go to the next option
-										if(empty($color))continue;
-									}
-									$opt_class.="  cf_color_btn";
-								}
-								//buttons
-								elseif($disp_type==11 || $disp_type==12)$opt_class.="  cf_button";
-							}
-
-							//generate the code for the active and inactive anchors
-							if(!$opt->active){
-								if($display_empty_opt==1){
-									$opt_class.=" cf_disabled_opt";
-									$inactive= 'disabled="disabled"';
-									$style='';
-									$anchor_label=$opt->label;
-
-									//colors
-									if($disp_type=='9' || $disp_type=='10' && $opt->type!='clear'){
-										$clr_counter=0;
-										$colors_html='';
-										foreach($colors_multi as $clr){
-											$color=cftools::checkNFormatColor($clr);
-											if(empty($color))continue;
-											$clr_counter++;
-											$colors_html.='<span class="cf_color_inner" style="background-color:'.$color.'; width:'.$color_btn_width.'%;"></span>';
-										}
-
-										$option_anchor=$colors_html;
-
-									}else $option_anchor='<span class="'.$opt_class.'" '.$style.'>'.$anchor_label.'</span>';
-								}else{//hide if disabled
-									$option_anchor='';
-								}
-							}
-							else{
-								$linkAttributes['class']="$opt_class$class_name";
-								$linkAttributes['rel']='';
-								if($this->moduleparams->get('indexfltrs_by_search_engines',0)==false || $opt->type=='clear')$linkAttributes['rel']="nofollow";
-								//if we are using apply button for the inputs we should load only the option's id - urls won't used
-								//For links and buttons the anchor should always created
-								if(($this->results_trigger!='btn') || $disp_type=='4' || ($disp_type=='3' && $opt->type=='clear') || $disp_type=='7' || $disp_type=='9' || $disp_type=='10' || $disp_type=='11' || $disp_type=='12' ||!empty($opt->isparent)){
-									$linkAttributes['data-module-id']=$this->module->id;
-									$linkAttributes['id']=$element_id.'_a';
-									$linkAttributes['style']=$style;
-
-									$option_targ=JRoute::_($this->UrlHanlder->getURL($flt,$opt->id,$opt->type));
-									if($this->results_trigger!='btn' && $this->results_loading_mode!='ajax')$script='onclick="window.top.location.href=\''.$option_targ.'\';"';
-									$anchor_label=$opt->label;
-
-									//colors
-									if(($disp_type=='9' || $disp_type=='10') && $opt->type!='clear'){
-										$clr_counter=0;
-										$colors_html='';
-										foreach($colors_multi as $clr){
-											$color=cftools::checkNFormatColor($clr);
-											if(empty($color))continue;
-											$clr_counter++;
-											$colors_html.='<span class="cf_color_inner" style="background-color:'.$color.'; width:'.$color_btn_width.'%;"></span>';
-										}
-
-										$option_anchor=JHtml::link($option_targ,$colors_html,$linkAttributes);
-									}else $option_anchor=JHtml::link($option_targ,$anchor_label,$linkAttributes);
-
-								}else {
-									$option_targ=$opt->id;
-									$anchor_label=$opt->label;
-									$option_anchor='<span class="'.$opt_class.'">'.$anchor_label.'</span>';
-								}
-								$opt_found=true;
-							}
-
-							if($option_anchor){
-								$disp_input=true;
-
-								//radios or checkboxes
-								//in case of categories, parent categories with childs cannot be radios or checkboxes (only links)
-								if(($disp_type==2 || $disp_type==3) && empty($opt->isparent)){
-									$type_str=($disp_type==2?'radio':'checkbox');
+						foreach($options_ar as $op)
+                        {
+                            $script = '';
+                            $opt = (object)$op;
+                            $select_flt = '';
+                            $opt_class = "cf_option";
+                            $li_class = '';
+                            $class_name = '';
+                            $style = '';
+                            $color = '';
+                            $inactive = '';
+                            $element_id = $display_key . '_elid' . $opt->id;
 
 
-									//when checkboxes, hide the checkbox from the clear tool
-									if($opt->type=='clear' && $type_str=='checkbox')$disp_input=false;
-									$class_str='';
-									if($li_class)$class_str=' class="'.$li_class.'"';
-									$innerHTML.='<li '.$class_str.'>';
-									if($disp_input){
-										$innerHTML.='
-										 <label class="'.$class_name.'" for="'.$element_id.'">'.
-										'<input '.$script.' type="'.$type_str.'" name="'.$key.'[]" '. $inactive .'class="cf_flt" id="'.$element_id.'" value="'.($opt->id).'" '.$select_flt.'/>'.$option_anchor.'</label>';
-										if($dispCounter && isset($opt->counter) && $opt->active){
-											$innerHTML.='<span class="cf_flt_counter">('.$opt->counter.')</span>';
-										}
-									}else{
-										$innerHTML.='<span class="'.$class_name.'">'.$option_anchor.'</span>';
-									}
-									$innerHTML.='</li>';
-								}
 
-								//links (image|simple links), buttons, or clears
-								else{
-									$class_str='';
-									if($opt->type=='clear')$li_class='cf_li_clear';
-									if($li_class)$class_str=' class="'.$li_class.'"';
-									$innerHTML.='<li '.$class_str.'>';
+                            //create classes for the category tree
+                            if ($key == 'virtuemart_category_id' && $cat_ordering == 'tree' && $opt->id > 0 && isset($opt->cat_tree))
+                            {
+                                $li_class = 'cf_catOption';
+                                $li_class .= " cfLiLevel$opt->level";
 
-									//image links
-									if($disp_type==7){
-										if(empty($opt->media_id))$media_id=0;
-										else $media_id=$opt->media_id;
-										$img=cftools::getMediaFile($media_id);
+                                if ($category_flt_tree_mode == false)
+                                {//tree mode collapsed
+                                    if (!empty($opt->isparent))
+                                    {
+                                        $opt_class .= ' cf_parentOpt';
+                                        $li_class .= ' cf_parentLi';
 
-										if(!empty($img) && $opt->type!='clear'){
+                                        if (strpos($current_tree_string, $opt->cat_tree . '-' . $opt->id . '-') !== false) $opt_state = ' cf_expand';
+                                        else $opt_state = ' cf_unexpand';
+                                        $opt_class .= $opt_state;
+                                    } else
+                                    {
+                                        $opt_class .= ' cf_childOpt';
 
-											//inactive images
-											if(!$opt->active){
-												if($display_empty_opt==1){
-													$opt_class.=" cf_disabled_opt_image";
-													$img_option_anchor='<img src="'.$img->url.'" alt="'.$opt->label.'"/>';
-													$img_option_anchor.='<span class="cf_img_caption">'.$opt->label;
-													if($dispCounter && isset($opt->counter) && $opt->active){
-														$img_option_anchor.='<span class="cf_flt_counter">('.$opt->counter.')</span>';
-													}
-													$img_option_anchor.='</span>';
-												}
+                                    }
+                                    $opt_class .= ' tree_' . $opt->cat_tree;
+                                    $li_class .= ' li-tree_' . $opt->cat_tree;
 
-												//hide if disabled
-												else{
-													$img_option_anchor='';
-												}
-											}else{
-												$opt_class.=" cf_opt_image";
-												$imgWrapper='<img src="'.$img->url.'" alt="'.$opt->label.'"/>';
-												$imgWrapper.='<span class="cf_img_caption">'.$opt->label;
-												if($dispCounter && isset($opt->counter) && $opt->active){
-													$imgWrapper.='<span class="cf_flt_counter">('.$opt->counter.')</span>';
-												}
-												$imgWrapper.='</span>';
-												$linkAttributes['data-module-id']=$this->module->id;
-												$linkAttributes['id']=$element_id.'_a';
-												$img_option_anchor=JHtml::link($option_targ,$imgWrapper,$linkAttributes);
-											}
-											$innerHTML.='<div class="cf_img_wrapper '.$opt_class.'" style="width:'.$img->width.'px;">'.
-											$img_option_anchor.'</div>';
-										}
+                                    if ((empty($current_tree_string) && $opt->level > 0) || (!empty($current_tree_string) && strpos($current_tree_string, $opt->cat_tree . '-') === false))
+                                    {
+                                        $li_class .= " cf_invisible";
+                                    }
+                                }
+                            }
 
-										//simple links
-										else{
-											$innerHTML.=$option_anchor;
-											if($dispCounter && isset($opt->counter) && $opt->active){
-												$innerHTML.='<span class="cf_flt_counter">('.$opt->counter.')</span>';
-											}
-										}
-									}
+                            if ($opt->selected)
+                            {
+                                $select_flt = ' checked="checked"';
+                                $class_name = ' cf_sel_opt';
+                            }
+                            if ($opt->type == 'clear')
+                            {
+                                $class_name .= ' cf_clear';
+                            } else {
+                                //colors
+                                if ($disp_type == '9' || $disp_type == '10')
+                                {
+                                    $colors_multi = explode('|', $opt->label);
+                                    $nr_colors_multi = count($colors_multi);
+                                    $color_btn_width = 100 / $nr_colors_multi;
+                                    //check to see if the value is color
+                                    if ($nr_colors_multi == 1)
+                                    {
+                                        $color = cftools::checkNFormatColor($opt->label);
+                                        //if no color go to the next option
+                                        if (empty($color)) continue;
+                                    }
+                                    $opt_class .= "  cf_color_btn";
+                                } //buttons
+                                else if ($disp_type == 11 || $disp_type == 12) {
+                                    $opt_class .= "  cf_button";
+                                }
+                            }
 
-									//color buttons, buttons
-									elseif($disp_type==9 || $disp_type==10 || $disp_type==11 || $disp_type==12){
-										$innerHTML.=$option_anchor;
-									}
+                            //generate the code for the active and inactive anchors
+                            if (!$opt->active)
+                            {
+                                if ($display_empty_opt == 1)
+                                {
+                                    $opt_class .= " cf_disabled_opt";
+                                    $inactive = 'disabled="disabled"';
+                                    $style = '';
+                                    $anchor_label = $opt->label;
 
-									//simple links
-									else {
-										$innerHTML.=$option_anchor;
-										if($dispCounter && isset($opt->counter) && $opt->active){
-											$innerHTML.='<span class="cf_flt_counter">('.$opt->counter.')</span>';
-										}
-									}
-									/* add a hidden input which holds the selected category.
-									 * This way we can submit the form with a submit button too
-									 */
-									if($opt->selected){
-										$innerHTML.='<input type="hidden" name="'.$key.'[]" value="'.($opt->id).'" />';
-									}
-									$innerHTML.='</li>';
-								}
-							}
-						}//foreach(options)
+                                    //colors
+                                    if ($disp_type == '9' || $disp_type == '10' && $opt->type != 'clear')
+                                    {
+                                        $clr_counter = 0;
+                                        $colors_html = '';
+                                        foreach ($colors_multi as $clr)
+                                        {
+                                            $color = cftools::checkNFormatColor($clr);
+                                            if (empty($color)) continue;
+                                            $clr_counter++;
+                                            $colors_html .= '<span class="cf_color_inner" style="background-color:' . $color . '; width:' . $color_btn_width . '%;"></span>';
+                                        }
+
+                                        $option_anchor = $colors_html;
+
+                                    } else $option_anchor = '<span class="' . $opt_class . '" ' . $style . '>' . $anchor_label . '</span>';
+                                } else
+                                {//hide if disabled
+                                    $option_anchor = '';
+                                }
+                            } else
+                            {
+                                $linkAttributes['class'] = "$opt_class$class_name";
+                                $linkAttributes['rel'] = '';
+                                if ($this->moduleparams->get('indexfltrs_by_search_engines', 0) == false || $opt->type == 'clear')
+                                    $linkAttributes['rel'] = "nofollow";
+
+                                // если мы используем кнопку «Применить» для входов,
+                                // мы должны загружать только идентификатор опции - URL-адреса не будут использоваться
+                                // Для ссылок и кнопок якорь должен всегда создаваться
+                                if (($this->results_trigger != 'btn') || $disp_type == '4' || ($disp_type == '3' && $opt->type == 'clear') || $disp_type == '7' || $disp_type == '9' || $disp_type == '10' || $disp_type == '11' || $disp_type == '12' || !empty($opt->isparent))
+                                {
+                                    $linkAttributes['data-module-id'] = $this->module->id;
+                                    $linkAttributes['id'] = $element_id . '_a';
+                                    $linkAttributes['style'] = $style;
+
+                                    # Создание URI ссылки
+                                    $urlParams = $this->UrlHanlder->getURL($flt, $opt->id, $opt->type , $filterOptionsSelectedCount ) ;
+
+                       // index.php?option=com_customfilters&Itemid=1149&custom_f_23[0]=32&lang=ru&view=products&virtuemart_category_id[0]=15
+//                                    echo'<pre>';print_r( $flt );echo'</pre>'.__FILE__.' '.__LINE__;
+//                                    echo'<pre>';print_r( $opt->id );echo'</pre>'.__FILE__.' '.__LINE__;
+//                                    echo'<pre>';print_r( $urlParams );echo'</pre>'.__FILE__.' '.__LINE__;
+
+                                    
+                                    $option_targ = JRoute::_( $urlParams );
+                                    
+                                    if ($this->results_trigger != 'btn' && $this->results_loading_mode != 'ajax') 
+                                        $script = 'onclick="window.top.location.href=\'' . $option_targ . '\';"';
+                                    
+                                    $anchor_label = $opt->label;
+
+                                    //colors
+                                    if (($disp_type == '9' || $disp_type == '10') && $opt->type != 'clear')
+                                    {
+                                        $clr_counter = 0;
+                                        $colors_html = '';
+                                        foreach ($colors_multi as $clr)
+                                        {
+                                            $color = cftools::checkNFormatColor($clr);
+                                            if (empty($color)) continue;
+                                            $clr_counter++;
+                                            $colors_html .= '<span class="cf_color_inner" style="background-color:' . $color . '; width:' . $color_btn_width . '%;"></span>';
+                                        }
+
+                                        $option_anchor = JHtml::link($option_targ, $colors_html, $linkAttributes);
+                                    } else $option_anchor = JHtml::link($option_targ, $anchor_label, $linkAttributes);
+
+                                } else
+                                {
+                                    $option_targ = $opt->id;
+                                    $anchor_label = $opt->label;
+                                    $option_anchor = '<span class="' . $opt_class . '">' . $anchor_label . '</span>';
+                                }
+                                $opt_found = true;
+                            }
+
+                            if ($option_anchor)
+                            {
+                                $disp_input = true;
+
+                                //radios or checkboxes
+                                //in case of categories, parent categories with childs cannot be radios or checkboxes (only links)
+                                if (($disp_type == 2 || $disp_type == 3) && empty($opt->isparent))
+                                {
+                                    $type_str = ($disp_type == 2 ? 'radio' : 'checkbox');
+                                    
+
+
+
+
+                                    //when checkboxes, hide the checkbox from the clear tool
+                                    if ($opt->type == 'clear' && $type_str == 'checkbox') $disp_input = false;
+                                    $class_str = '';
+                                    if ($li_class) $class_str = ' class="' . $li_class . '"';
+                                    $innerHTML .= '<li ' . $class_str . '>';
+
+
+                                    if ($disp_input)
+                                    {
+                                        $innerHTML .= '
+										 
+										 <label class="' . $class_name . '" for="' . $element_id . '">' .
+                                            '<input ' . $script . ' type="' . $type_str . '" name="' . $key . '[]" ' . $inactive . 'class="cf_flt" id="' . $element_id . '" value="' . ($opt->id) . '" ' . $select_flt . '/>'
+                                            . $option_anchor
+                                            . '</label>';
+
+                                        if ($dispCounter && isset($opt->counter) && $opt->active)
+                                        {
+                                            $innerHTML .= '<span class="cf_flt_counter">(' . $opt->counter . ')</span>';
+                                        }
+                                    } else
+                                    {
+                                        $innerHTML .= '<span class="' . $class_name . '">' . $option_anchor . '</span>';
+                                    }
+                                    $innerHTML .= '</li>';
+                                } //links (image|simple links), buttons, or clears
+                                else
+                                {
+                                    $class_str = '';
+                                    if ($opt->type == 'clear') $li_class = 'cf_li_clear';
+                                    if ($li_class) $class_str = ' class="' . $li_class . '"';
+                                    $innerHTML .= '<li ' . $class_str . '>';
+
+
+                                    
+                                    
+                                    //image links
+                                    if ($disp_type == 7)
+                                    {
+                                        if (empty($opt->media_id)) $media_id = 0;
+                                        else $media_id = $opt->media_id;
+                                        $img = cftools::getMediaFile($media_id);
+
+                                        if (!empty($img) && $opt->type != 'clear')
+                                        {
+
+                                            //inactive images
+                                            if (!$opt->active)
+                                            {
+                                                if ($display_empty_opt == 1)
+                                                {
+                                                    $opt_class .= " cf_disabled_opt_image";
+                                                    $img_option_anchor = '<img src="' . $img->url . '" alt="' . $opt->label . '"/>';
+                                                    $img_option_anchor .= '<span class="cf_img_caption">' . $opt->label;
+                                                    if ($dispCounter && isset($opt->counter) && $opt->active)
+                                                    {
+                                                        $img_option_anchor .= '<span class="cf_flt_counter">(' . $opt->counter . ')</span>';
+                                                    }
+                                                    $img_option_anchor .= '</span>';
+                                                } //hide if disabled
+                                                else
+                                                {
+                                                    $img_option_anchor = '';
+                                                }
+                                            } else
+                                            {
+                                                $opt_class .= " cf_opt_image";
+                                                $imgWrapper = '<img src="' . $img->url . '" alt="' . $opt->label . '"/>';
+                                                $imgWrapper .= '<span class="cf_img_caption">' . $opt->label;
+                                                if ($dispCounter && isset($opt->counter) && $opt->active)
+                                                {
+                                                    $imgWrapper .= '<span class="cf_flt_counter">(' . $opt->counter . ')</span>';
+                                                }
+                                                $imgWrapper .= '</span>';
+                                                $linkAttributes['data-module-id'] = $this->module->id;
+                                                $linkAttributes['id'] = $element_id . '_a';
+                                                $img_option_anchor = JHtml::link($option_targ, $imgWrapper, $linkAttributes);
+                                            }
+                                            $innerHTML .= '<div class="cf_img_wrapper ' . $opt_class . '" style="width:' . $img->width . 'px;">' .
+                                                $img_option_anchor . '</div>';
+                                        } //simple links
+                                        else
+                                        {
+                                            $innerHTML .= $option_anchor;
+                                            if ($dispCounter && isset($opt->counter) && $opt->active)
+                                            {
+                                                $innerHTML .= '<span class="cf_flt_counter">(' . $opt->counter . ')</span>';
+                                            }
+                                        }
+                                    } //color buttons, buttons
+                                    elseif ($disp_type == 9 || $disp_type == 10 || $disp_type == 11 || $disp_type == 12)
+                                    {
+                                        $innerHTML .= $option_anchor;
+                                    } //simple links
+                                    else
+                                    {
+                                        
+
+
+                                        $innerHTML .= $option_anchor;
+                                        if ($dispCounter && isset($opt->counter) && $opt->active)
+                                        {
+                                            $innerHTML .= '<span class="cf_flt_counter">(' . $opt->counter . ')</span>';
+                                        }
+                                    }
+                                    /* add a hidden input which holds the selected category.
+                                     * This way we can submit the form with a submit button too
+                                     */
+                                    if ($opt->selected)
+                                    {
+                                        $innerHTML .= '<input type="hidden" name="' . $key . '[]" value="' . ($opt->id) . '" />';
+                                    }
+                                    $innerHTML .= '</li>';
+                                }
+                            }
+                        }//foreach(options)
 
 						if($innerHTML){
+
+
+
 							$list_id='cf_list_'.$key.'_'.$this->module->id;
 
 							//smart search functionality
@@ -851,4 +940,28 @@ class ModCfilteringRender
 		$scriptAssets['scriptVars']=$this->scriptVars;
 		return $scriptAssets;
 	}
+
+    /**
+     * Подсчет выбранных опцый во всех фильтров
+     * @return int - Колисество выбранных фальтров
+     * @since 3.9
+     * @auhtor Gartes | sad.net79@gmail.com | Skype : agroparknew | Telegram : @gartes
+     * @date 04.10.2020 16:54
+     *
+     */
+    protected function optionsSelectedCount(): int
+    {
+        $filterOptionsSelectedCount = 0;
+        foreach ($this->filters as $filter)
+        {
+            foreach ($filter['options'] as $option)
+            {
+                if (isset($option['selected']) && $option['selected'])
+                {
+                    $filterOptionsSelectedCount++;
+                }#END IF
+            }#END FOREACH
+        }#END FOREACH
+        return $filterOptionsSelectedCount;
+    }
 }

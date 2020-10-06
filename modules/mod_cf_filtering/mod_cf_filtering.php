@@ -40,6 +40,10 @@ if (! defined('VM_SHOP_LANG_PRFX')) {
     define('VM_SHOP_LANG_PRFX', $shop_default_lang);
 }
 
+
+
+
+
 $modObj = new ModCfFilteringHelper($params, $module);
 $filters_render_array = $modObj->getFilters();
 $filter_headers_array = $modObj->getFltHeaders();

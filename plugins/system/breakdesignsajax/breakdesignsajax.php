@@ -18,6 +18,7 @@
 // No direct access.
 defined('_JEXEC') or die;
 
+
 class plgSystemBreakdesignsajax extends JPlugin
 {
 
@@ -42,4 +43,37 @@ class plgSystemBreakdesignsajax extends JPlugin
             $doc->setBuffer($newBuffer, 'component');
         }
     }
+
+    function onDisplay($name)
+    {
+        die(__FILE__ .' '. __LINE__ );
+
+        $getContent = $this->_subject->getContent($name);
+        $js = "
+				function insertJCommentsOff(editor) {
+					var content = $getContent
+					if (content.match(/{jcomments off}/)) {
+						return false;
+					} else {
+						jInsertEditorText('{jcomments off}', editor);
+					}
+				}
+				";
+
+        $document = JFactory::getDocument();
+        $document->addScriptDeclaration($js);
+
+        $button = new JObject();
+        $button->set('class', 'btn');
+        $button->set('modal', false);
+        $button->set('onclick', 'insertJCommentsOff(\'' . $name . '\');return false;');
+        $button->set('text', JText::_('PLG_EDITORS-XTD_JCOMMENTSOFF_BUTTON_JCOMMENTSOFF'));
+        $button->set('name', 'blank');
+        $button->set('link', '#');
+
+        return $button;
+    }
+
+
+
 }

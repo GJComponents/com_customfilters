@@ -107,49 +107,71 @@ class ModCfFilteringHelper
         $this->scriptVars['results_wrapper'] = $params->get('results_wrapper', 'bd_results');       
         $this->optHelper = new OptionsHelper($params, $module);        
     }
-    
+
     /**
+     * Точка входа для генерации фильтров
      * The entry point for the filters generation
      *
      * @return array with the inside html code of every filter
      *
-     * @author Sakis Terz
+     * @throws Exception
      * @since 1.0
+     * @author Sakis Terz
      */
-    public function getFilters()
-    {       
+    public function getFilters( $onlyData = false )
+    {
         $japplication = JFactory::getApplication();
         $jinput = $japplication->input;
 
-        if ($this->results_loading_mode == 'ajax' || $this->results_trigger == 'btn') {
+
+        if ($this->results_loading_mode == 'ajax' || $this->results_trigger == 'btn')
+        {
             $loadAjaxModule = true;
-        }
-        else {
+        } else
+        {
             $loadAjaxModule = false;
         }
-        
+
+
+
         $this->scriptVars['loadModule'] = $loadAjaxModule;
         $dependency_dir = $this->moduleparams->get('dependency_direction', 'all');
 
         // profiler to get performance metrics
         $profilerParam = $this->moduleparams->get('cf_profiler', 0);
+
+
+
+
+
         if ($profilerParam) {
             $profiler = JProfiler::getInstance('application');
         }
 
+
+
          // this array contains the html of every filter in a different list item
         $filters_rendering_array = array();
 
-        // the selected filters' options array;
+
+        # массив опций выбранных фильтров;
+        # the selected filters' options array;
         $selected_flt = CfInput::getInputs();
 
-        // selected filters after encoding the output
+        # выбранные фильтры после кодирования вывода
+        # selected filters after encoding the output
         $this->selected_flt = $output = CfOutput::getOutput($selected_flt, $escape = true);
 
-        // holds the selections which should be used for each filter,when the dependency is from-top to bottom
+
+
+
+        # содержит выбор, который должен использоваться для каждого фильтра, когда зависимость сверху вниз
+        # holds the selections which should be used for each filter,when the dependency is from-top to bottom
         if (count($this->selected_flt) > 0 && $dependency_dir == 't-b') {
             $this->selected_fl_per_flt = CfOutput::getOutput(CfInput::getInputsPerFilter($this->module), $escape = true, $perfilter = true);
         }
+
+
 
         // reset options
         $display_reset_all = $this->moduleparams->get('disp_reset_all', 1);
@@ -159,22 +181,29 @@ class ModCfFilteringHelper
         
         $displayManager = new DisplayManager($this->moduleparams, $this->selected_flt);
 
+
+
+
+        $this->filters = \Joomla\CMS\Factory::getApplication()->get('filtersData' , [] );
+
+
         // define the filters order
         $filters_order = json_decode(str_replace("'", '"', $this->moduleparams->get('filterlist', '')));
         $filters_order = (array) $filters_order;
-        if (empty($filters_order) || ! in_array('virtuemart_category_id', $filters_order) || count($filters_order) != count($this->fltSuffix))
+        if (empty($filters_order) || ! in_array('virtuemart_category_id', $filters_order) || count($filters_order) != count($this->fltSuffix)){
             $filters_order = array(
                 'q',
                 'virtuemart_category_id',
                 'virtuemart_manufacturer_id',
                 'price',
                 'custom_f'
-            );         
+            );
+        }
+
 
         foreach ($filters_order as $filter_key) {
 
             switch ($filter_key) {
-
                 // --keywords search--
                 case 'q':
                     if ($displayManager->getDisplayControl('keyword_flt')) {
@@ -201,7 +230,7 @@ class ModCfFilteringHelper
                         $keyword_flt['options'][0]['value'] = ! empty($this->selected_flt[$filter_key]) ? $this->selected_flt[$filter_key] : '';
                         $keyword_flt['options'][0]['size'] = 30;
                         $keyword_flt['options'][0]['maxlength'] = 40;
-                                                
+
                         $this->expanded[$display_key] = $this->moduleparams->get('keyword_flt_expanded', '1');
                         $this->filters[$filter_key] = $keyword_flt;
 
@@ -211,7 +240,6 @@ class ModCfFilteringHelper
                         }
                     }
                     break;
-
                 // --Categories--
                 case 'virtuemart_category_id':
                     if ($displayManager->getDisplayControl('category_flt')) {
@@ -230,7 +258,7 @@ class ModCfFilteringHelper
                         else {
                             $vmcat_header = JText::_('MOD_CF_CATEGORIES');
                         }
-                        
+
                         if ($vm_cat_disp_type != 1) {
                             $this->smartSearch[$key] = $this->moduleparams->get('category_flt_smart_search', '0');
                         }
@@ -325,7 +353,6 @@ class ModCfFilteringHelper
                         }
                     }
                     break;
-
                 // --Manufacturers--
                 case 'virtuemart_manufacturer_id':
                     if ($displayManager->getDisplayControl('manuf_flt')) {
@@ -367,7 +394,6 @@ class ModCfFilteringHelper
                         }
                     }
                     break;
-
                 // --Price--
                 case 'price':
                     if ($displayManager->getDisplayControl('price_flt')) {
@@ -395,10 +421,10 @@ class ModCfFilteringHelper
                             if (! empty($this->currency_info)) {
                                 $this->scriptVars['currency_decimal_symbol'] = $this->currency_info->currency_decimal_symbol;
                             }
-                                /*
-                             * we are generating the vars that generates the setFilter function.
-                             * This way we can use the renderFilters function later to render the price filter
-                             */
+                            /*
+                         * we are generating the vars that generates the setFilter function.
+                         * This way we can use the renderFilters function later to render the price filter
+                         */
 
                             if ($display_price_inputs && ! $display_price_slider) {
                                 $price_flt_disp_type = 5; // range input
@@ -456,6 +482,10 @@ class ModCfFilteringHelper
                             $this->filters_headers_array[$display_key] = $price_header;
                             $this->expanded[$display_key] = $this->moduleparams->get('price_flt_expanded', '1');
                             $this->filters[$filter_key] = $price_flt;
+
+
+
+
                         }
 
                         // profiler
@@ -463,31 +493,45 @@ class ModCfFilteringHelper
                             $profiler->mark('price_flt');
                     }
                     break;
-
                 // --Custom filters--
                 case 'custom_f':
-                    if ($displayManager->getDisplayControl('custom_flt')) {
+
+//                    echo'<pre>';print_r( $displayManager->getDisplayControl('custom_flt') );echo'</pre>'.__FILE__.' '.__LINE__;
+//                    die(__FILE__ .' '. __LINE__ );
+
+
+
+                    if ( $displayManager->getDisplayControl('custom_flt') )
+                    {
+
                         $custom_flt = cftools::getCustomFilters($this->moduleparams);
+
+
+
                         $cf_range_size = 6;
                         $cf_range_maxlength = 5;
                         $vm_cust_filters_html = array();
 
                         // get the options
-                        foreach ($custom_flt as $cf) {
+                        foreach ($custom_flt as $cf)
+                        {
                             $var_name = "custom_f_$cf->custom_id";
                             $key = $var_name;
                             $display_key = $key . '_' . $this->module->id; // used as key to the html code
-                                                                     // load the params of that cf
+                            // load the params of that cf
                             $cfparams = new JRegistry();
                             $cfparams->loadString($cf->params, 'JSON');
 
                             // no smart search and scrollbar to drop-downs
-                            if ($cf->disp_type != 1) {
+                            if ($cf->disp_type != 1)
+                            {
                                 $maxHeight = $cfparams->get('scrollbar_after', '');
-                                if ($maxHeight) {
+                                if ($maxHeight)
+                                {
                                     $this->stylesDeclaration .= " #cf_list_$display_key { max-height:$maxHeight; overflow:auto; height:auto;}";
                                 }
-                                if ($cf->disp_type != 9 && $cf->disp_type != 10) {
+                                if ($cf->disp_type != 9 && $cf->disp_type != 10)
+                                {
                                     $this->smartSearch[$key] = $cfparams->get('smart_search', '0'); // no color buttons
                                 }
                             }
@@ -496,28 +540,32 @@ class ModCfFilteringHelper
                             $this->disp_types[$var_name] = $cf->disp_type;
 
                             // selectable types
-                            if ($cf->disp_type != 5 && $cf->disp_type != 6 && $cf->disp_type != 8) {
+                            if ($cf->disp_type != 5 && $cf->disp_type != 6 && $cf->disp_type != 8)
+                            {
                                 $filter = $this->setFilter($name = $var_name, $header = JText::_($cf->custom_title), $cf, $encoded_varID = true);
-                                if (! empty($filter['options'])) {
+                                if (!empty($filter['options']))
+                                {
                                     $filter['clearType'] = 'this';
                                     $this->filters[$key] = $filter;
                                 }
-                            }
-
-                            // range
-                            else {
+                            } // range
+                            else
+                            {
                                 // check if it should be displayed based on the filter's settings
-                                if (! $displayManager->displayCustomFilter($cf)) {
+                                if (!$displayManager->displayCustomFilter($cf))
+                                {
                                     continue;
                                 }
-                                
-                                if ($cf->disp_type == 6) {
+
+                                if ($cf->disp_type == 6)
+                                {
                                     // the renderer creates the inputs and the sliders
                                 }
                                 if ($cf->disp_type == 5)
                                     $this->scriptProcesses[] = "customFilters.addEventsRangeInputs('$key', {$this->module->id});";
 
-                                if ($cf->disp_type == 8) {
+                                if ($cf->disp_type == 8)
+                                {
                                     // the renderer creates the inputs and the calendars
                                 }
 
@@ -532,14 +580,14 @@ class ModCfFilteringHelper
                                 // from
                                 $cf_range['options'][0]['size'] = $cf_range_size;
                                 $cf_range['options'][0]['name'] = $var_name . '[0]';
-                                $cf_range['options'][0]['value'] = ! empty($this->selected_flt[$var_name][0]) ? $this->selected_flt[$var_name][0] : '';
+                                $cf_range['options'][0]['value'] = !empty($this->selected_flt[$var_name][0]) ? $this->selected_flt[$var_name][0] : '';
                                 $cf_range['options'][0]['maxlength'] = $cf_range_maxlength;
                                 $cf_range['options'][0]['slider_min_value'] = $cfparams->get('slider_min_value', 0);
 
                                 // to
                                 $cf_range['options'][1]['size'] = $cf_range_size;
                                 $cf_range['options'][1]['name'] = $var_name . '[1]';
-                                $cf_range['options'][1]['value'] = ! empty($this->selected_flt[$var_name][1]) ? $this->selected_flt[$var_name][1] : '';
+                                $cf_range['options'][1]['value'] = !empty($this->selected_flt[$var_name][1]) ? $this->selected_flt[$var_name][1] : '';
                                 $cf_range['options'][1]['label'] = JText::_('MOD_CF_RANGE_TO');
                                 $cf_range['options'][1]['maxlength'] = $cf_range_maxlength;
                                 $cf_range['options'][1]['slider_max_value'] = $slider_max_value = $cfparams->get('slider_max_value', 300);
@@ -548,7 +596,8 @@ class ModCfFilteringHelper
                             }
 
                             // display headers only in displays other than select drop down
-                            if (isset($this->filters[$var_name])) {
+                            if (isset($this->filters[$var_name]))
+                            {
                                 $this->filters_headers_array[$display_key] = JText::_($cf->custom_title);
                             }
 
@@ -561,9 +610,27 @@ class ModCfFilteringHelper
             } // switch
         } // foreach
 
+        \Joomla\CMS\Factory::getApplication()->set('filtersData' , $this->filters );
+
+
+
         // profiler print metrics
         if ($profilerParam)
             cftools::printProfiler($profiler);
+
+
+
+        # Если вернуть только данные
+        if ( $onlyData )
+        {
+            return $this->filters ;
+        }#END IF
+
+        
+//        echo'<pre>';print_r( $this->filters );echo'</pre>'.__FILE__.' '.__LINE__;
+//        die(__FILE__ .' '. __LINE__ );
+
+
 
         if (count($this->filters) > 0) {
             $parentScript = '';
@@ -580,12 +647,14 @@ class ModCfFilteringHelper
                 $ajax_module_spinner = 0;
             }
 
-            if ($this->moduleparams->get('use_results_ajax_spinner', '')) {
+            if ($this->moduleparams->get('use_results_ajax_spinner', ''))
+            {
                 $spinnerstyle = 'background-image:url(' . JURI::base() . $this->moduleparams->get('use_results_ajax_spinner', '') . ') !important;';
                 $spinnerstyle .= 'background-repeat:no-repeat !important;';
                 $this->stylesDeclaration .= '#cf_res_ajax_loader{' . $spinnerstyle . '}';
                 $ajax_results_spinner = 1;
-            } else {
+            } else
+            {
                 $ajax_results_spinner = 0;
             }
 
@@ -595,8 +664,10 @@ class ModCfFilteringHelper
             $this->scriptVars['results_loading_mode'] = $this->moduleparams->get('results_loading_mode', 'http');
             $this->scriptVars['category_flt_parent_link'] = $this->moduleparams->get('category_flt_parent_link', 0);
 
-            if ($dependency_dir == 't-b') {}
-            else {
+            if ($dependency_dir == 't-b')
+            {
+            } else
+            {
                 $this->selected_flt_modif = $this->removeInactiveOpt();
             }
 
@@ -609,6 +680,7 @@ class ModCfFilteringHelper
 
             $renderer = new ModCfilteringRender($this->module, $selected_flt, $this->filters);
             $filters_html = $renderer->renderFilters();
+
             $render_scriptAssets = $renderer->getScriptAssets();
             $this->scriptProcesses = array_merge($this->scriptProcesses, $render_scriptAssets['scriptProcesses']);
             $this->scriptFiles = array_merge($this->scriptFiles, $render_scriptAssets['scriptFiles']);
@@ -649,7 +721,7 @@ class ModCfFilteringHelper
                 $filters_rendering_array['scriptProcesses'] = $this->scriptProcesses;
             }
             // reset tool
-            if ($display_reset_all && ! empty($this->selected_flt)) {
+            if ( $display_reset_all && ! empty($this->selected_flt) ) {
                 $urlHanlder = new UrlHandler($this->module, $selected_flt);
                 $filters_rendering_array['resetUri'] = $urlHanlder->getResetUri();
             }
@@ -1176,5 +1248,146 @@ class ModCfFilteringHelper
     public function getFltHeaders()
     {
         return $this->filters_headers_array;
-    }   
+    }
+
+    /**
+     * Найти статью в таблице #__content для Выбранных фильтров
+     * @param false $setMeta - Устанавливать Meta Tags
+     * @return mixed|null объект статьи
+     * @since 3.9
+     * @auhtor Gartes | sad.net79@gmail.com | Skype : agroparknew | Telegram : @gartes
+     * @date 06.10.2020 00:48
+     *
+     */
+    public function getContentCombineFilter( $setMeta = false ){
+        $filters_render_array = self::getFiltersData();
+
+        $dataParam = [] ;
+        foreach ($filters_render_array as $filter)
+        {
+            foreach ($filter['options'] as $option)
+            {
+                if (isset($option['selected']) && $option['selected'])
+                {
+                    $var_name = $filter['var_name'];
+                    $dataParam[$var_name][] = $option['id'];
+                    
+
+                }
+            }
+        }
+        $params = json_encode($dataParam);
+        $db = \Joomla\CMS\Factory::getDbo();
+        $Query = $db->getQuery(true);
+        $Query->select('*')->from( $db->quoteName('#__content'));
+        $where = [
+            $db->quoteName('customfilters_content') . '='. $db->quote($params)
+        ];
+        $Query->where( $where );
+        $db->setQuery($Query);
+        $res = $db->loadObject();
+
+        if (!$res) return false ; #END IF
+
+        $res->attribs = json_decode( $res->attribs ) ;
+
+        if ( $setMeta )
+        {
+            $doc = \Joomla\CMS\Factory::getDocument();
+            # Тег Title
+            if ( $res->attribs->article_page_title ) $doc->setTitle( $res->attribs->article_page_title ) ; #END IF
+            if ( $res->metakey ) $doc->setMetaData( 'keywords', $res->metakey ) ; #END IF
+            if ( $res->metadesc ) $doc->setDescription(  $res->metadesc ) ; #END IF
+
+
+//            echo'<pre>';print_r( $doc );echo'</pre>'.__FILE__.' '.__LINE__;
+//            die(__FILE__ .' '. __LINE__ );
+
+        }#END IF
+        
+        return $res ;
+        echo'<pre>';print_r( $res );echo'</pre>'.__FILE__.' '.__LINE__;
+        echo'<pre>';print_r( $params );echo'</pre>'.__FILE__.' '.__LINE__;
+
+//        echo'<pre>';print_r( $option );echo'</pre>'.__FILE__.' '.__LINE__;
+//        echo'<pre>';print_r( $filter );echo'</pre>'.__FILE__.' '.__LINE__;
+        die(__FILE__ .' '. __LINE__ );
+    }
+
+    /**
+     * Получить названия выделенных фальтров для вставки в H1 тег страницы
+     * @return array|false
+     * @since 3.9
+     * @auhtor Gartes | sad.net79@gmail.com | Skype : agroparknew | Telegram : @gartes
+     * @date 06.10.2020 00:12
+     *
+     */
+    public static function getSelectedTitles()
+    {
+        $filters_render_array = self::getFiltersData();
+
+
+
+        $Titles = [
+            'data' => [] ,
+            'count' => 0 ,
+        ];
+        $oldTitle = false ;
+        foreach ($filters_render_array as $filter)
+        {
+            foreach ($filter['options'] as $option)
+            {
+                if (isset($option['selected']) && $option['selected'])
+                {
+                    $var_name = $filter['var_name'] ;
+                    if ( $oldTitle == $var_name && $Titles['count'] ) return false ; #END IF
+
+                    if ( $filter['header'] == 'MOD_CF_MANUFACTURERS' ) $filter['header']='Производитель';   #END IF
+
+                    $Titles['data'][] = \Joomla\CMS\Language\Text::_($filter['header']) . ' ' . $option['label'] ;
+                    $Titles['count']++ ;
+
+                    $oldTitle = $var_name;
+                    if ( $Titles['count'] > 2 ) return false ; #END IF
+
+//                    echo '<pre>'; print_r($option['label']); echo '</pre>' . __FILE__ . ' ' . __LINE__;
+//                    echo '<pre>'; print_r($filter); echo '</pre>' . __FILE__ . ' ' . __LINE__;
+                }#END IF
+            }#END FOREACH
+
+        }#END FOREACH
+
+
+
+
+        return $Titles ;
+    }
+
+    public static function getFiltersData(){
+        $filtersData = \Joomla\CMS\Factory::getApplication()->get('filtersData' , [] );
+        if ( count($filtersData ) ) return $filtersData ; #END IF
+
+        if (! defined('VM_SHOP_LANG_PRFX')) {
+            define('VM_SHOP_LANG_PRFX', VmConfig::$defaultLang );
+        }
+
+        if (! defined('JLANGPRFX')) {
+            define('JLANGPRFX',  VMLANG  );
+        }
+
+        $module = \Joomla\CMS\Helper\ModuleHelper::getModule( 'mod_cf_filtering'  );
+        $paramsModule = new \Joomla\Registry\Registry( $module->params ) ;
+        $self = new ModCfFilteringHelper($paramsModule, $module);
+        $filtersData = $self->getFilters( true );
+
+
+
+
+
+        \Joomla\CMS\Factory::getApplication()->set('filtersData' , $filtersData );
+
+        return $filtersData ;
+
+    }
+
 }

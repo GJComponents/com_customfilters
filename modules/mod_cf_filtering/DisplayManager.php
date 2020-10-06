@@ -66,42 +66,88 @@ class DisplayManager
         $vm_prd_id = $jinput->get('virtuemart_product_id', 0, 'array');
         $is_published_param = $flt_sfx . '_published';
         $is_published = $this->params->get($is_published_param);
-    
+
+
+        $t = [
+            'keyword_flt_published' ,
+            'category_flt_published' ,
+            'manuf_flt_published' ,
+            'price_flt_published' ,
+        ] ;
+
+
+
+
+
+
+        // die(__FILE__ .' '. __LINE__ );
+
+
+
         // always visible in the cf pages
         if ($is_published) {
-            if ($option == 'com_customfilters') {
+            if ($option == 'com_customfilters' || $option == 'com_ajax' )
+            {
                 $disp = true;
-            } elseif ($option == 'com_virtuemart') {
-                if ($view == 'category' && ! empty($vm_cat_id)) {
+
+
+            }
+            elseif ($option == 'com_virtuemart')
+            {
+                if ($view == 'category' && !empty($vm_cat_id))
+                {
                     $param_name = $flt_sfx . '_vm_category_pages';
                 } // manufacturer page or the page that comes after selecting a manufacturer (category page)
-                elseif (($view == 'manufacturer') || ($view == 'category' && ! empty($vm_mnf_id))) {
+                elseif (($view == 'manufacturer') || ($view == 'category' && !empty($vm_mnf_id)))
+                {
                     $param_name = $flt_sfx . '_vm_manuf_pages';
-                } elseif ($view == 'productdetails' && $vm_prd_id) {
+                } elseif ($view == 'productdetails' && $vm_prd_id)
+                {
                     $param_name = $flt_sfx . '_vm_productdetails_pages';
                 } // other views
-                elseif (($view != 'manufacturer' && $view != 'category' && $view != 'productdetails') || ($view == 'category' && empty($vm_cat_id) && empty($vm_mnf_id))) { // other
+                elseif (($view != 'manufacturer' && $view != 'category' && $view != 'productdetails') || ($view == 'category' && empty($vm_cat_id) && empty($vm_mnf_id)))
+                { // other
                     $param_name = $flt_sfx . '_vm_other_pages';
                 }
                 if (isset($param_name))
                     $disp = $this->params->get($param_name);
-            } else { // non virtuemart pages
+            } else
+            { // non virtuemart pages
                 $param_name = $flt_sfx . '_non_vm_pages';
                 $disp = $this->params->get($param_name);
             }
-    
+
+
+            
+
             /*
              * for the custom filters there is an extra condition
              * display only if other filters are selected
              */
     
             if ($disp) {
-                if ($flt_sfx == 'custom_flt')
+
+
+
+                $app = \Joomla\CMS\Factory::getApplication() ;
+
+                if ($flt_sfx == 'custom_flt'){
                     $disp_with_fltrs = $this->params->get('custom_flt_disp_after', '1');
+                    if ($app->isClient('administrator')) return true ; #END IF
+                }
                 elseif ($flt_sfx == 'manuf_flt')
                 $disp_with_fltrs = $this->params->get('manuf_flt_disp_after', '1');
-                else
+                else{
                     $disp_with_fltrs = 1;
+                }
+
+               /* if (  !in_array( $is_published_param , $t ) ){
+
+                    echo'<pre>';print_r( $disp_with_fltrs );echo'</pre>'.__FILE__.' '.__LINE__;
+                    die(__FILE__ .' '. __LINE__ );
+
+                }#END IF*/
+                
     
                 // the keys of the array that contains the selected options
                 $selected_filters_keys = array_keys($this->selected_flt);
@@ -145,7 +191,7 @@ class DisplayManager
     
                 // display if category or manuf is selected
                 elseif ($disp_with_fltrs == 'keyword_or_vm_cat_or_customfilter') {
-                    if (isset($this->selected_flt['q']) || isset($this->selected_flt['virtuemart_category_id']) || isset($this->selected_flt['virtuemart_manufacturer_id']))
+                    if ( isset($this->selected_flt['q']) || isset($this->selected_flt['virtuemart_category_id']) || isset($this->selected_flt['virtuemart_manufacturer_id']))
                         $disp = true;
                     else
                         $disp = false;

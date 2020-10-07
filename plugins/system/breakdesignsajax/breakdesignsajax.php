@@ -46,8 +46,8 @@ class plgSystemBreakdesignsajax extends JPlugin
 
     function onDisplay($name)
     {
-        die(__FILE__ .' '. __LINE__ );
-
+        // die(__FILE__ .' '. __LINE__ );
+return ;
         $getContent = $this->_subject->getContent($name);
         $js = "
 				function insertJCommentsOff(editor) {
